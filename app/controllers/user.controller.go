@@ -1,38 +1,113 @@
 package controllers
 
 import (
-	"encoding/json"
 	"log"
 	"nabiha/project-golang/app/config"
+	"nabiha/project-golang/app/models"
 	"nabiha/project-golang/app/repository"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type UserController struct {
 	UserRepo *repository.UserRepository
 }
 
-func NewUserController(db *config.Config) *UserController {
-	return &UserController{
-		UserRepo: repository.NewUserRepository(db),
-	}
-}
-
-func (uc *UserController) ListUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := uc.UserRepo.FindAll()
-	if err != nil {
-		log.Printf("Error listing users: %v", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
+func NewUserController(cfg *config.Config) {
+	controller := &UserController{
+		UserRepo: repository.NewUserRepository(cfg),
 	}
 
-	usersJSON, err := json.Marshal(users)
-	if err != nil {
-		log.Printf("Error marshalling users to JSON: %v", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
+	cfg.Router.GET("/users", func(c *gin.Context) {
+		users, err := controller.UserRepo.FindAll()
+		if err != nil {
+			log.Printf("Error listing users: %v", err)
+			c.IndentedJSON(http.StatusInternalServerError, "Internal server error")
+			return
+		}
+		c.IndentedJSON(http.StatusAccepted, users)
+	})
 
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(usersJSON)
+	cfg.Router.GET("/user", func(c *gin.Context) {
+		id := c.Query("id")
+		if id == "" {
+			c.IndentedJSON(http.StatusNotAcceptable, "no params connstrain id")
+			return
+		}
+
+		user, err := controller.UserRepo.FindById(id)
+		if err != nil {
+			log.Printf("Error listing users: %v", err)
+			c.IndentedJSON(http.StatusInternalServerError, "Internal server error")
+			return
+		}
+
+		c.IndentedJSON(http.StatusAccepted, user)
+	})
+
+	cfg.Router.POST("/users", func(c *gin.Context) {
+
+		var newUser models.User
+		err := c.ShouldBindJSON(&newUser)
+		if err != nil {
+			log.Printf("Error decoding request body: %v", err)
+			c.IndentedJSON(http.StatusBadRequest, "Bad request")
+			return
+		}
+
+		created, err := controller.UserRepo.Create(newUser)
+		if err != nil {
+			log.Printf("Error: %v", err)
+			c.IndentedJSON(http.StatusInternalServerError, "Internal server error")
+			return
+		}
+		c.IndentedJSON(http.StatusCreated, created)
+	})
+
+	cfg.Router.PUT("/users", func(c *gin.Context) {
+
+		id := c.Query("id")
+		if id == "" {
+			c.IndentedJSON(http.StatusNotAcceptable, "no params connstrain id")
+			return
+		}
+		var updateUser models.User
+		err := c.ShouldBindJSON(&updateUser)
+		if err != nil {
+			log.Printf("Error decoding request body: %v", err)
+			c.IndentedJSON(http.StatusBadRequest, "Bad request")
+			return
+		}
+
+		updated, err := controller.UserRepo.Update(updateUser, id)
+		if err != nil {
+			log.Printf("Error: %v", err)
+			c.IndentedJSON(http.StatusInternalServerError, "Internal server error")
+			return
+		}
+
+		c.IndentedJSON(http.StatusCreated, updated)
+
+	})
+
+	cfg.Router.DELETE("/users", func(c *gin.Context) {
+
+		id := c.Query("id")
+		if id == "" {
+			c.IndentedJSON(http.StatusNotAcceptable, "no params connstrain id")
+			return
+		}
+
+		deleted, err := controller.UserRepo.Delete(id)
+		if err != nil {
+			log.Printf("Error: %v", err)
+			c.IndentedJSON(http.StatusInternalServerError, "Internal server error")
+			return
+		}
+
+		c.IndentedJSON(http.StatusOK, deleted)
+
+	})
+
 }

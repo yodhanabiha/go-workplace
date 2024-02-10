@@ -1,7 +1,9 @@
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
-    Username VARCHAR(255) NOT NULL,
-    Email VARCHAR(255) NOT NULL,
-    Password VARCHAR(255) NOT NULL,
-    Age INT
+    username VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    age INT NOT NULL,
+    at_created timestamp,
+    at_updated timestamp
 );

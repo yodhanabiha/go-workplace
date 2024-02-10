@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
@@ -14,6 +15,7 @@ import (
 type Config struct {
 	Server ServerConfig
 	DB     DATASOURCE
+	Router *gin.Engine
 }
 
 // ServerConfig holds server configuration
@@ -47,6 +49,8 @@ func LoadConfig() (*Config, error) {
         log.Fatal(err)
     }
 
+	router := gin.Default()
+
 
 	cfg := &Config{
 		Server: ServerConfig{
@@ -56,6 +60,7 @@ func LoadConfig() (*Config, error) {
 		DB: DATASOURCE{
 			Pg: db,
 		},
+		Router : router,
 	}
 
 	return cfg, nil
